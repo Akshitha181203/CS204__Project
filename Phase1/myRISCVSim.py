@@ -1,3 +1,4 @@
+
 def readFile(file):
     File=open(file,'r')
     global MachineCode
@@ -85,10 +86,6 @@ def decode(IR):
             operation="slt"
             print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
             return operation,arguments
-        elif(func3=="011"):
-            operation="sltu"
-            print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
-            return operation,arguments
         elif(func3=="100"):
             operation="xor"
             print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
@@ -107,18 +104,6 @@ def decode(IR):
             return operation,arguments
         elif(func3=="111"):
             operation="and"
-            print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
-            return operation,arguments
-        elif(func3=="000" and func7=="0000001"):
-            operation="mul"
-            print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
-            return operation,arguments
-        elif(func3=="100" and func7=="0000001"):
-            operation="div"
-            print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
-            return operation,arguments
-        elif(func3=="110" and func7=="0000001"):
-            operation="rem"
             print("The operation is "+operation+". Rs1: x"+str(arg1)+" Rs2: x"+str(arg2)+" Rd: "+str(int(rd,base=2)))
             return operation,arguments
     elif(opcode=="0010011"):
@@ -265,18 +250,6 @@ def execute(operation,arguments):
         print(operation+" of x"+str(arg1)+" and x"+str(arg2)+" is "+str(bintodec(ALU_output)))
     elif operation=="and":
         temp=bintodec(Reg[arg1])&bintodec(Reg[arg2])
-        ALU_output=dectobin(temp,32)
-        print(operation+" of x"+str(arg1)+" and x"+str(arg2)+" is "+str(bintodec(ALU_output)))
-    elif operation=="mul":
-        temp=bintodec(Reg[arg1]) * bintodec(Reg[arg2])
-        ALU_output=dectobin(temp,32)
-        print(operation+" of x"+str(arg1)+" and x"+str(arg2)+" is "+str(bintodec(ALU_output)))
-    elif operation=="div":
-        temp=bintodec(Reg[arg1]) // bintodec(Reg[arg2])
-        ALU_output=dectobin(temp,32) 
-        print(operation+" of x"+str(arg1)+" and x"+str(arg2)+" is "+str(bintodec(ALU_output)))
-    elif operation=="rem":
-        temp=bintodec(Reg[arg1]) % bintodec(Reg[arg2])
         ALU_output=dectobin(temp,32)
         print(operation+" of x"+str(arg1)+" and x"+str(arg2)+" is "+str(bintodec(ALU_output)))
     elif operation=="addi":
@@ -431,4 +404,3 @@ def run_RISCVsim():
         input()
     storeState()
     print("The total number of clock cycles used ",count)
-
