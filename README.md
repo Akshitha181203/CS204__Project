@@ -32,9 +32,8 @@ CS204-Project
   |- test
       |
       |- simple_add.mc
-      |- fib.mc
-      |- array_add.mc
-      |- fact.mc
-      |- bubble.mc
+      |- fibonacci.mc
+      |- factorial.mc
+  
       
 
