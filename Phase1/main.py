@@ -1,8 +1,4 @@
-import sys
-import Simulator
-
-if len(sys.argv)<2:
-    print("Error")
-else:
-    Simulator.readFile(sys.argv[1])
-    Simulator.run_RISCVsim()
+import myRISCVSim
+Name=input()
+myRISCVSim.readFile(Name)
+myRISCVSim.run_RISCVsim()
