@@ -34,7 +34,3 @@ CS204-Project
       |- simple_add.mc
       |- fibonacci.mc
       |- factorial.mc
-  |
-  |- phase2
-      
-
