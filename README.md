@@ -22,7 +22,7 @@ Directory Structure:
 --------------------
 CS204-Project
   |
-  |- phase1
+  |- Phase1
       |
       |- myRISCVSim.py
       |- main.py      
@@ -31,6 +31,15 @@ CS204-Project
       |- design-doc.docx
   |- test
       |
-      |- simple_add.mc
-      |- fibonacci.mc
-      |- factorial.txt
+      |- simple_add.txt
+      |- fibonacci.txt
+      |- Largenum.txt
+      
+  |- Phase2
+      |-Simulator.py
+      |-main.py
+  |- test
+      |-simple_add.txt
+      |-fibonacci.txt
+      |-Largenum.txt
+     
