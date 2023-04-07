@@ -158,3 +158,163 @@ class ControlUnit:
             rd=rd>>7
             state.rd=rd
             func7=state.IR&(0xFE000000)
+            func7=func7>>25
+            func3=state.IR&(0x7000)
+            func3=func3>>12
+            if func7==0 and func3==0:
+                state.operation='add'
+            elif func7==0 and func3==7:
+                state.operation='and'
+            elif func7==0 and func3==6:
+                state.operation='or'
+            elif func7==0 and func3==1:
+                state.operation='sll'
+            elif func7==0 and func3==2:
+                state.operation='slt'
+            elif func7==32 and func3==5:
+                state.operation='sra'
+            elif func7==0 and func3==5:
+                state.operation='srl'
+            elif func7==32 and func3==0:
+                state.operation='sub'
+            elif func7==0 and func3==4:
+                state.operation='xor'
+            elif func7==1 and func3==0:
+                state.operation='mul'
+            elif func7==1 and func3==4:
+                state.operation='div'
+            elif func7==1 and func3==6:
+                state.operation='rem'
+
+        #I type instructions
+        elif opcode==19 or opcode==3:
+            rs1=state.IR&(0xF8000)
+            rs1=rs1>>15
+            state.rs1=rs1
+            imm=state.IR&(0xFFF00000)
+            imm=imm>>20
+            state.imm=imm
+            rd=state.IR&(0xF80)
+            rd=rd>>7
+            state.rd=rd
+            func3=state.IR&(0x7000)
+            func3=func3>>12
+            if opcode==19:
+                self.count_alu_inst+=1
+                if func3==0:
+                    state.operation='addi'
+                elif func3==7:
+                    state.operation='andi'
+                elif func3==6:
+                    state.operation='ori'
+            elif opcode==3:
+                self.count_mem_ins+=1
+                if func3==0:
+                    state.operation='lb'
+                elif func3==1:
+                    state.operation='lh'
+                elif func3==2:
+                    state.operation='lw'
+
+        elif opcode==103:
+            self.count_control_ins+=1
+            temp=self.RegisterFile[state.rs1]+self.twoscomplement(state.imm,12)
+            state.PC_temp=temp
+            state.Alu_out=state.PC+4
+            if btb!=0:
+                if not btb.checkBTB(state.PC):
+                    btb.updateBTB(state.PC,state.PC_temp)
+                    self.branch_mispred+=1
+                    control_hazard=True
+                    new_pc=state.PC_temp
+        elif opcode==35:
+            self.count_mem_ins+=1
+            rs1=state.IR&(0xF8000)
+            rs1=rs1>>15
+            state.rs1=rs1
+            rs2=state.IR&(0x1F00000)
+            rs2=rs2>>20
+            state.rs2=rs2
+            func7=state.IR&(0xFE00000)
+            func7=func7>>25
+            func3=state.IR&(0x7000)
+            func3=func3>>12
+            rd=state.IR&(0xF80)
+            rd=rd>>7
+            state.imm=(func7*(2**5))+rd
+            if func3==0:
+                state.operation='sb'
+            elif func3==1:
+                state.operation='sh'
+            elif func3==2:
+                state.operation='sw'
+
+        elif opcode==99:
+            self.count_control_ins+=1
+            state.RA=self.RegisterFile[state.rs1] if state.branchRA!=-1 else state.branchRA
+            state.RB=self.RegisterFile[state.rs1] if state.branchRB!=-1 else state.branchRB
+
+            if state.operation=='beq':
+                if self.RegisterFile[state.rs1]==self.RegisterFile[state.rs2]:
+                    state.PC_temp=state.PC+self.twoscomplement(state.imm,12)
+                    state.Alu_out=1
+                else:
+                    state.Alu_out=0
+            elif state.operation=='blt':
+                if self.RegisterFile[state.rs1]<self.RegisterFile[state.rs2]:
+                    state.PC_temp=state.PC+self.twoscomplement(state.imm,12)
+                    state.Alu_out=1
+                else:
+                    state.Alu_out=0
+            elif state.operation=='bge':
+                if self.RegisterFile[state.rs1]>=self.RegisterFile[state.rs2]:
+                    state.PC_temp=state.PC+self.twoscomplement(state.imm,12)
+                    state.Alu_out=1
+                else:
+                    state.Alu_out=0
+            elif state.operation=='bne':
+                if self.RegisterFile[state.rs1]!=self.RegisterFile[state.rs2]:
+                    state.PC_temp=state.PC+self.twoscomplement(state.imm,12)
+                    state.Alu_out=1
+                else:
+                    state.Alu_out=0
+            if btb!=0:
+                if self.twoscomplement(state.imm,12)<0:
+                    if not btb.checkBTB(state.PC):
+                        btb.updateBTB(state.PC,state.PC_temp)
+                        if state.Alu_out==1:
+                            self.branch_mispred+=1
+                            control_hazard=True
+                            new_pc=state.PC_temp
+                    else:
+                        if state.Alu_out==0:
+                            self.branch_mispred+=1
+                            control_hazard=True
+                            new_pc=state.PC_temp
+                else:
+                    if state.Alu_out==1:
+                        self.branch_mispred+=1
+                        control_hazard=True
+                        new_pc=state.PC_temp
+        elif opcode==23:
+            rd=state.IR&(0xF80)
+            rd=rd>>7
+            state.rd=rd
+            imm=state.IR&(0xFFFFF000)
+            state.imm=imm
+            state.operation='auipc'
+
+        elif opcode==55:
+            self.count_alu_inst+=1
+            rd=state.IR&(0xF80)
+            rd=rd>>7
+            state.rd=rd
+            imm=state.IR&(0xFFFFF000)
+            state.imm=imm
+            state.operation='lui'
+
+        elif opcode==111:
+            self.count_control_ins+=1
+            rd=state.IR&(0xF80)
+            rd=rd>>7
+            state.rd=rd
