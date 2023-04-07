@@ -318,3 +318,167 @@ class ControlUnit:
             rd=state.IR&(0xF80)
             rd=rd>>7
             state.rd=rd
+            temp=bin(state.IR).replace('0b','')
+            temp='0'*(32-len(temp))+temp
+            imm=temp[0]
+            imm+=temp[12:20]
+            imm+=temp[11]
+            imm+=temp[1:11]+'0'
+            state.imm=int(imm,2)
+            state.operation='jal'
+            temp=self.twoscomplement(state.imm,21)
+            state.PC_temp=state.PC+temp
+            if btb!=0:
+                if not btb.checkBTB(state.PC):
+                    btb.updateBTB(state.PC,state.PC_temp)
+                    self.branch_mispred+=1
+                    control_hazard=True
+                    new_pc=state.PC_temp
+            state.Alu_out=state.PC+4
+        if btb==0:
+            return state
+        return control_hazard,new_pc,state
+    
+    def execute(self,state):
+        if state.is_actual_instruction==False:
+            return state
+        self.count_ins+=1
+        if state.opcode==51:
+            state.RA=self.RegisterFile[state.rs1]
+            state.RB=self.RegisterFile[state.rs2]
+            if state.operation=='add':
+                state.Alu_out=self.twoscomplement(state.RA,32)+self.twoscomplement(state.RB,32)
+            elif state.operation=='and':
+                state.Alu_out=self.twoscomplement(state.RA,32)&self.twoscomplement(state.RB,32)
+            elif state.operation=='or':
+                state.Alu_out=self.twoscomplement(state.RA,32)|self.twoscomplement(state.RB,32)
+            elif state.operation=='sll':
+                temp=bin(state.RA)
+                temp='0'*(32-len(temp))+temp
+                temp=temp[self.twoscomplement(state.RB)%32:]+'0'*self.twoscomplement(state.RB,32)%32
+                state.Alu_out=int(temp,2)
+            elif state.operation=='slt':
+                if self.twoscomplement(state.RA,32)<self.twoscomplement(state.RB,32):
+                    state.Alu_out=1
+                else:
+                    state.Alu_out=0
+            elif state.operation=='sra':
+                temp=bin(state.RA)
+                temp='0'*(32-len(temp))+temp
+                temp='1'*self.twoscomplement(state.RB,32)%32+temp[:self.twoscomplement(self.RegisterFile[state.RB],32)%32]
+            elif state.operation=='srl':
+                temp=bin(state.RA)
+                temp='0'*(32-len(temp))+temp
+                temp=temp[self.twoscomplement(state.RB,32)%32:]+'1'*self.twoscomplement(state.RB,32)%32
+                state.Alu_out=int(temp,2)
+            elif state.operation=='sub':
+                state.Alu_out=self.twoscomplement(state.RA,32)-self.twoscomplement(state.RB,32)
+            elif state.operation=='xor':
+                state.Alu_out= self.twoscomplement(state.RA,32)^self.twoscomplement(state.RB,32)
+            elif state.operation=='mul':
+                state.Alu_out=self.twoscomplement(state.RA,32)*self.twoscomplement(state.RB,32)
+            elif state.operation=='div':
+                try:
+                    state.Alu_out=self.twoscomplement(state.RA,32)//self.twoscomplement(state.RB,32)
+                except ZeroDivisionError:
+                    state.Alu_out=0xFFFFFFFF
+            elif state.operation=='rem':
+                try:
+                    state.Alu_out=self.twoscomplement(state.RA,32)%self.twoscomplement(state.RB,32)
+                except ZeroDivisionError:
+                    state.Alu_out=self.twoscomplement(state.RA,32)
+        if state.opcode in [19,3,103]:
+            state.RA=self.RegisterFile[state.rs1]
+            if state.operation=='addi':
+                state.Alu_out=self.twoscomplement(state.RA,32)+self.twoscomplement(state.imm,12)
+            elif state.operation=='andi':
+                state.Alu_out=self.twoscomplement(state.RA,32)&self.twoscomplement(state.imm,12)
+            elif state.operation=='ori':
+                state.Alu_out=self.twoscomplement(state.RA,32)|self.twoscomplement(state.imm,12)
+            elif state.operation in ['lb','lw','lh']:
+                state.Alu_out=self.RegisterFile[state.rs1]+self.twoscomplement(state.imm,12)
+        if state.operation in ['sb','sh','sw']:
+            state.RA=self.RegisterFile[state.rs1]
+            state.Alu_out=state.RA+self.twoscomplement(state.imm,12)
+        elif state.operation=='auipc':
+            state.Alu_out=state.PC+self.twoscomplement(state.imm,32)
+        elif state.operation=='lui':
+            state.Alu_out=state.imm
+        state.PC=state.PC_temp
+        return state
+    
+    def memory_access(self,state):
+        if state.is_actual_instruction==False:
+            return state
+        if state.operation=='lb':
+            val=0
+            for i in range(1):
+                adr=state.Alu_out+i
+                if adr in self.MEM.keys():
+                    val=val+self.MEM[adr]*(1<<(8*i))
+            state.MDR=self.twoscomplement(val,8)
+        elif state.operation=='lh':
+            val=0
+            for i in range(2):
+                adr=state.Alu_out+i
+                if adr in self.MEM.keys():
+                    val=val+self.MEM[adr]*(1<<(8*i))
+            state.MDR=self.twoscomplement(val,16)
+        elif state.operation=='lw':
+            val=0
+            for i in range(4):
+                adr=state.Alu_out+i
+                if adr in self.MEM.keys():
+                    val=val+self.MEM[adr]*(1<<(8*i))
+            state.MDR=self.twoscomplement(val,32)
+        elif state.operation=='sb':
+            adr=state.Alu_out
+            data=self.RegisterFile[state.rs2]
+            for i in range(1):
+                d_in=(data>>(8*i))&(0xFF)
+                self.MEM[adr]=d_in
+                adr=adr+1
+        elif state.operation=='sh':
+            adr=state.Alu_out
+            data=self.RegisterFile[state.rs2]
+            for i in range(2):
+                d_in=(data>>(8*i))&(0xFF)
+                self.MEM[adr]=d_in
+                adr=adr+1
+        elif state.operation=='sw':
+            adr=state.Alu_out
+            data=self.RegisterFile[state.rs2]
+            for i in range(4):
+                d_in=(data>>(8*i))&(0xFF)
+                self.MEM[adr]=d_in
+                adr=adr+1
+        return state
+
+    def write_back(self,state):
+        if state.is_actual_instruction==False:
+            return state
+        if state.rd==0:
+            return state
+        if state.operation in ['add','and','or','sll','slt','sra','srl','sub','xor','mul','div','rem','addi','andi','ori']:
+            self.RegisterFile[state.rd]=state.Alu_out
+        elif state.operation in ['lb','lh','lw']:
+            self.RegisterFile[state.rd]=state.MDR
+        elif state.operation in ['jalr','jal','lui','auipc']:
+            self.RegisterFile[state.rd]=state.Alu_out
+        return state
+
+class BranchTargetBuffer:
+    table={}
+    
+    def updateBTB(self,PC,target_PC):
+        self.table[PC]=target_PC
+    
+    def checkBTB(self,PC):
+        if PC in self.table.keys():
+            return True
+        return False
+    
+    def targetBTB(self,PC):
+        if self.checkBTB(PC):
+            return self.table[PC]
+        return -1
