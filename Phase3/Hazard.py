@@ -105,7 +105,7 @@ class HDU:
                     forwarding_paths.add("M->D")
                 if toWB.rd == toDecode.rs2:
                     toDecode.rs2branch = toWB.RY
-                     self.M2D=toWB.RY
+                    self.M2D=toWB.RY
                     isHazard = True
                     forwarding_paths.add("M->D")
 
