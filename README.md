@@ -42,4 +42,14 @@ CS204-Project
       |-simple_add.txt
       |-fibonacci.txt
       |-Largenum.txt
+    
+  |- Phase3
+      |-Hazard.py
+      |-RunScript.py
+      |-StageFunctions.py
+  |- test
+      |-Temp.txt
+      |-Test1.txt
+      |-Test.asm
+      |-Test.txt
      
