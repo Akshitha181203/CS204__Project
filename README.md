@@ -1,4 +1,4 @@
-# CS204_Project_Phase_1
+# CS204_Project
 
 ================================================
 Functional Simulator for RISCV Processor
